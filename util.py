@@ -3,6 +3,7 @@ import re
 from tensorflow.python.keras import backend as K
 from tensorflow.python.keras.layers import Layer
 from tensorflow.python.keras.preprocessing.sequence import pad_sequences
+import pandas as pd
 
 from nltk.corpus import stopwords
 from gensim.models import KeyedVectors
@@ -71,7 +72,8 @@ def make_w2v_embeddings(df, embedding_dim=300, empty_w2v=False):
     if empty_w2v:
         word2vec = EmptyWord2Vec
     else:
-        word2vec = KeyedVectors.load_word2vec_format("./data/GoogleNews-vectors-negative300.bin.gz", binary=True)
+        # word2vec = KeyedVectors.load_word2vec_format("./data/GoogleNews-vectors-negative300.bin.gz", binary=True)
+        word2vec = KeyedVectors.load_word2vec_format("/media/sumanta/Acer/glove_vecs/glove.6B.300d.tiny.txt", binary=False)
         # word2vec = gensim.models.word2vec.Word2Vec.load("./data/Quora-Question-Pairs.w2v").wv
 
     for index, row in df.iterrows():
@@ -116,6 +118,19 @@ def make_w2v_embeddings(df, embedding_dim=300, empty_w2v=False):
 
     return df, embeddings
 
+def make_psg_pair_embeddings(dat, emb_pid_file, emb_vec_file):
+    emb_pid_dict = {}
+    for l in np.load(emb_pid_file):
+        emb_pid_dict[l.split('\t')[0]] = (int(l.split('\t')[1]), int(l.split('\t')[2]), int(l.split('\t')[3]))
+    data_mat = []
+    for t in dat:
+        p1dat = emb_pid_dict[t[1]]
+        p1emb = list(range(p1dat[1], p1dat[1] + p1dat[2]))
+        p2dat = emb_pid_dict[t[2].strip()]
+        p2emb = list(range(p2dat[1], p2dat[1] + p2dat[2]))
+        data_mat.append([t[0], p1emb, p2emb])
+    data_mat = pd.DataFrame(data_mat, columns=['is_duplicate', 'question1_n', 'question2_n'])
+    return data_mat, np.load(emb_vec_file)
 
 def split_and_zero_padding(df, max_seq_length):
     # Split to dicts

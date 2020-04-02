@@ -13,24 +13,35 @@ import tensorflow as tf
 from tensorflow.python.keras.models import Model, Sequential
 from tensorflow.python.keras.layers import Input, Embedding, LSTM, GRU, Conv1D, Conv2D, GlobalMaxPool1D, Dense, Dropout
 
-from util import make_w2v_embeddings
+from util import make_psg_pair_embeddings
 from util import split_and_zero_padding
 from util import ManDist
 
 # File paths
-TRAIN_CSV = './data/train_small.csv'
+TRAIN_TSV = '/home/sumanta/Documents/SiameseLSTM_data/by1train-discrim-bal.tsv'
+TEST_TSV = '/home/sumanta/Documents/SiameseLSTM_data/by1test.tsv'
+TRAIN_EMB_PIDS = '/media/sumanta/Seagate Backup Plus Drive/SentenceBERT_embeddings/sentbert_embeddings_by1train/bert-base-passage-wiki-sec-mean-sentwise/paraids_sents.npy'
+TRAIN_EMB_VECS = '/media/sumanta/Seagate Backup Plus Drive/SentenceBERT_embeddings/sentbert_embeddings_by1train/bert-base-passage-wiki-sec-mean-sentwise/bert-base-wikipedia-sections-mean-tokens-passage-part1.npy'
+TEST_EMB_PIDS = '/media/sumanta/Seagate Backup Plus Drive/SentenceBERT_embeddings/sentbert_embeddings_by1test/bert-base-passage-wiki-sec-mean-sentwise/paraids_sents.npy'
+TEST_EMB_VECS = '/media/sumanta/Seagate Backup Plus Drive/SentenceBERT_embeddings/sentbert_embeddings_by1test/bert-base-passage-wiki-sec-mean-sentwise/bert-base-wikipedia-sections-mean-tokens-passage-part1.npy'
 
 # Load training set
-train_df = pd.read_csv(TRAIN_CSV)
-for q in ['question1', 'question2']:
-    train_df[q + '_n'] = train_df[q]
+train_dat = []
+with open(TRAIN_TSV, 'r') as tr:
+    for l in tr:
+        train_dat.append([int(l.split('\t')[0]), l.split('\t')[1], l.split('\t')[2]])
+test_dat = []
+with open(TEST_TSV, 'r') as tt:
+    for l in tt:
+        test_dat.append([int(l.split('\t')[0]), l.split('\t')[1], l.split('\t')[2]])
 
 # Make word2vec embeddings
-embedding_dim = 300
+embedding_dim = 768
 max_seq_length = 20
 use_w2v = True
 
-train_df, embeddings = make_w2v_embeddings(train_df, embedding_dim=embedding_dim, empty_w2v=not use_w2v)
+train_df, train_embeddings = make_psg_pair_embeddings(train_dat, TRAIN_EMB_PIDS, TRAIN_EMB_VECS)
+test_df, test_embeddings = make_psg_pair_embeddings(test_dat, TEST_EMB_PIDS, TEST_EMB_VECS)
 
 # Split to train validation
 validation_size = int(len(train_df) * 0.1)
@@ -62,8 +73,8 @@ n_hidden = 50
 
 # Define the shared model
 x = Sequential()
-x.add(Embedding(len(embeddings), embedding_dim,
-                weights=[embeddings], input_shape=(max_seq_length,), trainable=False))
+x.add(Embedding(len(train_embeddings), embedding_dim,
+                weights=[train_embeddings], input_shape=(max_seq_length,), trainable=False))
 # CNN
 # x.add(Conv1D(250, kernel_size=5, activation='relu'))
 # x.add(GlobalMaxPool1D())
