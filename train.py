@@ -83,9 +83,9 @@ right_input = Input(shape=(max_seq_length,), dtype='int32')
 malstm_distance = ManDist()([shared_model(left_input), shared_model(right_input)])
 model = Model(inputs=[left_input, right_input], outputs=[malstm_distance])
 
-if gpus >= 2:
+#if gpus >= 2:
     # `multi_gpu_model()` is a so quite buggy. it breaks the saved model.
-    model = tf.keras.utils.multi_gpu_model(model, gpus=gpus)
+    #model = tf.keras.utils.multi_gpu_model(model, gpus=gpus)
 model.compile(loss='mean_squared_error', optimizer=tf.keras.optimizers.Adam(), metrics=['accuracy'])
 model.summary()
 shared_model.summary()
